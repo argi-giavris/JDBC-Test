@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+
+    <!-- Define appenders (output destinations) -->
+    <Appenders>
+        <!-- Console appender (prints log messages to the console) -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+
+        <!-- Add more appenders as needed -->
+    </Appenders>
+
+    <!-- Define loggers (log categories) -->
+    <Loggers>
+        <!-- Your application logger configuration -->
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+        </Root>
+
+        <!-- HikariCP logger configuration -->
+        <Logger name="com.zaxxer.hikari" level="debug">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <!-- Add more loggers as needed -->
+
+    </Loggers>
+
+</Configuration>

@@ -1,8 +1,5 @@
 import org.example.utils.DbUtils;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -64,6 +61,11 @@ public class DbUtilsTest {
         } catch (Exception e) {
             fail("Unexpected exception: " + e.getMessage());
         }
+    }
+
+    @AfterEach
+    void checkThreadLocalState(){
+        DbUtils.checkThreadLocalState();
     }
 
     @AfterAll

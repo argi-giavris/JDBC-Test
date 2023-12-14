@@ -123,7 +123,15 @@ public class DbUtils {
         return connection;
     }
 
+    public static void checkThreadLocalState() {
+        Connection connection = threadLocalConnection.get();
+        int depth = threadLocalDepthConnection.get();
 
+        if (connection != null || depth != 0) {
+            throw new IllegalStateException("ThreadLocal state not properly cleared. " +
+                    "Connection: " + connection + ", Depth: " + depth);
+        }
+    }
 
 
 }

@@ -2,9 +2,7 @@ package org.example.utils;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import net.ttddyy.dsproxy.listener.logging.SLF4JLogLevel;
 import net.ttddyy.dsproxy.support.ProxyDataSourceBuilder;
-import org.postgresql.ds.PGSimpleDataSource;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -64,15 +62,12 @@ public class DbUtils {
 
     public static void inTransactionWithoutResult(ConnectionConsumer consumer) throws SQLException {
         Connection connection = getConnection();
-
         try {
             consumer.accept(connection);
             connection.commit();
 
         } catch (Exception e) {
-            System.out.println("Depth " + threadLocalDepthConnection.get());
             connection.rollback();
-            System.out.println("Roll back");
             throw new RuntimeException(e);
 
         } finally {
@@ -86,7 +81,6 @@ public class DbUtils {
                     throw  new SQLException(e);
                 }
             }
-
             threadLocalDepthConnection.set(threadLocalDepthConnection.get() - 1);
         }
     }
@@ -99,11 +93,8 @@ public class DbUtils {
             T result = function.apply(connection);
             connection.commit();
             return result;
-
         } catch (Exception e) {
-            System.out.println("Depth " + threadLocalDepthConnection.get());
             connection.rollback();
-            System.out.println("Roll back");
             throw new RuntimeException(e);
         } finally {
             if (threadLocalDepthConnection.get() == 1) {

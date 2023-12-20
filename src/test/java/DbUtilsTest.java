@@ -64,12 +64,12 @@ public class DbUtilsTest {
     }
 
     @AfterEach
-    void checkThreadLocalState(){
+    void checkThreadLocalState() {
         DbUtils.checkThreadLocalState();
     }
 
     @AfterAll
-    static void dropTestTable(){
+    static void dropTestTable() {
         String query = "Drop table test";
         try {
             DbUtils.withConnection(connection -> {
@@ -85,20 +85,11 @@ public class DbUtilsTest {
     @Test
     void withConnectionSuccessTest() throws SQLException {
 
-        try {
-            DbUtils.withConnection(connection -> {
-                try {
-                    insertUser(connection, "john@example.com", "John Doe");
-                    insertUser(connection, "jin@example.com", "Jin Doe");
+        DbUtils.withConnection(connection -> {
+            insertUser(connection, "john@example.com", "John Doe");
+            insertUser(connection, "jin@example.com", "Jin Doe");
+        });
 
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-
-            });
-        } catch (Exception e) {
-            fail("Unexpected exception: " + e.getMessage());
-        }
 
         assertTrue(oneRowUserExists("john@example.com"));
         assertTrue(oneRowUserExists("jin@example.com"));
@@ -108,41 +99,23 @@ public class DbUtilsTest {
     @Test
     void withConnectionDuplicate() throws SQLException {
 
-        try {
-            DbUtils.withConnection(connection -> {
-                try {
-                    insertUser(connection, "john@example.com", "John Doe");
-
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-
-            });
-        } catch (Exception e) {
-            fail("Unexpected exception: " + e.getMessage());
-        }
+        DbUtils.withConnection(connection -> insertUser(connection, "john@example.com", "John Doe"));
 
         assertThrows(RuntimeException.class, () -> DbUtils.withConnection(connection -> {
-            try {
-                insertUser(connection, "john@example.com", "John Doe");
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            insertUser(connection, "john@example.com", "John Doe");
         }));
         assertTrue(oneRowUserExists("john@example.com"));
     }
+
     @Test
     void withConnectionSameTransactionDuplicate() throws SQLException { //autocommit true, first record should be inserted
 
         assertThrows(RuntimeException.class, () -> DbUtils.withConnection(connection -> {
-            try {
-                insertUser(connection, "john@example.com", "John Doe");
-                // Intentionally insert the same user again, causing a duplicate key violation
-                insertUser(connection, "john@example.com", "John Doe");
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            insertUser(connection, "john@example.com", "John Doe");
+            // Intentionally insert the same user again, causing a duplicate key violation
+            insertUser(connection, "john@example.com", "John Doe");
         }));
+
         assertTrue(oneRowUserExists("john@example.com"));
     }
 
@@ -150,20 +123,10 @@ public class DbUtilsTest {
     void withConnectionNestedTransactionDuplicate() throws SQLException { //autocommit true, first record should be inserted
 
         assertThrows(RuntimeException.class, () -> DbUtils.withConnection(connection -> {
-            try {
-                insertUser(connection, "john@example.com", "John Doe");
-
-                DbUtils.withConnection(innerConnection -> {
-                    try {
-                        insertUser(innerConnection, "john@example.com", "John Doe");
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            insertUser(connection, "john@example.com", "John Doe");
+            DbUtils.withConnection(innerConnection -> {
+                insertUser(innerConnection, "john@example.com", "John Doe");
+            });
         }));
         assertTrue(oneRowUserExists("john@example.com"));
     }
@@ -171,18 +134,12 @@ public class DbUtilsTest {
     @Test
     void inTransactionWithoutResultSuccessTest() throws SQLException {
 
-        try {
-            DbUtils.inTransactionWithoutResult(connection -> {
-                try {
-                    insertUser(connection, "john@example.com", "John Doe");
-                    insertUser(connection, "jin@example.com", "Jin Doe");
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        } catch (Exception e) {
-            fail("Unexpected exception: " + e.getMessage());
-        }
+        DbUtils.inTransactionWithoutResult(connection -> {
+
+            insertUser(connection, "john@example.com", "John Doe");
+            insertUser(connection, "jin@example.com", "Jin Doe");
+
+        });
         assertTrue(oneRowUserExists("john@example.com"));
         assertTrue(oneRowUserExists("jin@example.com"));
     }
@@ -190,18 +147,11 @@ public class DbUtilsTest {
     @Test
     void inTransactionWithoutResultDuplicateRollBack() throws SQLException {
 
-
         assertThrows(RuntimeException.class, () -> {
             DbUtils.inTransactionWithoutResult(connection -> {
-                try {
-                    insertUser(connection, "john@example.com", "John Doe");
-                    // Intentionally insert the same user again, causing a duplicate key violation
-                    insertUser(connection, "john@example.com", "John Doe");
-
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-
+                insertUser(connection, "john@example.com", "John Doe");
+                // Intentionally insert the same user again, causing a duplicate key violation
+                insertUser(connection, "john@example.com", "John Doe");
             });
         });
         assertFalse(oneRowUserExists("john@example.com"));
@@ -210,22 +160,17 @@ public class DbUtilsTest {
     @Test
     void inTransactionWithoutResultNestedDuplicateRollBack() throws SQLException {
 
-
         assertThrows(RuntimeException.class, () -> {
             DbUtils.inTransactionWithoutResult(connection -> {
-                try {
-                    insertUser(connection, "john@example.com", "John Doe");
+                insertUser(connection, "john@example.com", "John Doe");
 
-                    DbUtils.inTransactionWithoutResult(innerConnection -> {
-                        try {
-                            insertUser(innerConnection, "john@example.com", "John Doe");
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
+                DbUtils.inTransactionWithoutResult(innerConnection -> {
+                    try {
+                        insertUser(innerConnection, "john@example.com", "John Doe");
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
             });
         });
         assertFalse(oneRowUserExists("john@example.com"));
@@ -233,7 +178,6 @@ public class DbUtilsTest {
 
     @Test
     void inTransactionSuccessTest() throws SQLException {
-
 
         DbUtils.ConnectionFunction<Integer> transactionFunction = connection -> {
             insertUser(connection, "john@example.com", "John Doe");
@@ -258,20 +202,18 @@ public class DbUtilsTest {
             return null;
         };
 
-        try {
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             DbUtils.inTransaction(transactionFunction);
-            fail("Expected RuntimeException due to duplicate key violation");
-        } catch (RuntimeException e) {
+        });
 
-            assertTrue(e.getCause() instanceof SQLException);
-            assertTrue(e.getMessage().contains("duplicate key value"));
-        }
+        assertTrue(exception.getCause() instanceof SQLException);
+        assertTrue(exception.getMessage().contains("duplicate key value"));
+
         assertFalse(oneRowUserExists("john@example.com"));
     }
 
     @Test
     void nestedInTransactionRollbackTest() throws SQLException {
-
 
         DbUtils.ConnectionFunction<Void> outerTransaction = connection -> {
             insertUser(connection, "john@example.com", "John Doe");
@@ -283,20 +225,18 @@ public class DbUtilsTest {
                 });
                 fail("Expected RuntimeException due to duplicate key violation in nested transaction");
             } catch (RuntimeException e) {
-
                 assertTrue(e.getCause() instanceof SQLException);
                 assertTrue(e.getMessage().contains("duplicate key value"));
-                throw e;
+                throw e; // Rethrow the exception to ensure it's caught by assertThrows
             }
+
             return null;
         };
 
-        try {
+        assertThrows(RuntimeException.class, () -> {
             DbUtils.inTransaction(outerTransaction);
-            fail("Expected RuntimeException due to duplicate key violation in outer transaction");
-        } catch (RuntimeException e) {
-            assertTrue(e.getMessage().contains("duplicate key value"));
-        }
+        });
+
         assertFalse(oneRowUserExists("john@example.com"));
     }
 
